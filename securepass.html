@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecurePass Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050810;
+    --surface: #0d1117;
+    --surface2: #161b27;
+    --border: rgba(255,255,255,0.06);
+    --accent: #00f5d4;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --danger: #ef4444;
+    --warn: #f59e0b;
+    --good: #22c55e;
+    --great: #00f5d4;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated background */
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,212,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,212,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .bg-glow {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-glow-1 {
+    background: radial-gradient(circle, rgba(0,245,212,0.08) 0%, transparent 70%);
+    top: -200px; left: -100px;
+    animation: floatGlow 8s ease-in-out infinite;
+  }
+  .bg-glow-2 {
+    background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%);
+    bottom: -200px; right: -100px;
+    animation: floatGlow 10s ease-in-out infinite reverse;
+  }
+
+  @keyframes floatGlow {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(30px, 20px) scale(1.1); }
+  }
+
+  /* Layout */
+  .container {
+    position: relative; z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+    animation: fadeSlideUp 0.8s ease both;
+  }
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,245,212,0.08);
+    border: 1px solid rgba(0,245,212,0.2);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .logo-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  .subtitle {
+    font-size: 16px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 300;
+  }
+
+  /* Main card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 36px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(12px);
+    animation: fadeSlideUp 0.8s ease both;
+  }
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.2s; }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Password display */
+  .password-section { margin-bottom: 0; }
+
+  .password-display {
+    position: relative;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 28px 28px 28px;
+    margin-bottom: 20px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .password-display::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,245,212,0.03), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .password-display:hover { border-color: rgba(0,245,212,0.3); }
+  .password-display:hover::before { opacity: 1; }
+
+  .password-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(14px, 2.5vw, 22px);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    word-break: break-all;
+    flex: 1;
+    line-height: 1.5;
+    padding-right: 40px;
+    transition: all 0.3s;
+  }
+  .password-text.placeholder {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 14px;
+  }
+
+  /* Character coloring */
+  .char-upper { color: #60a5fa; }
+  .char-lower { color: var(--text); }
+  .char-digit { color: var(--accent); }
+  .char-symbol { color: #a78bfa; }
+
+  /* Security badge on display */
+  .security-ribbon {
+    position: absolute;
+    top: 12px; right: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    transition: all 0.3s;
+  }
+
+  /* Strength bar */
+  .strength-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .strength-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .strength-label {
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .strength-text {
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    transition: color 0.3s;
+  }
+  .strength-bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .strength-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    width: 0%;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s;
+  }
+  .strength-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .strength-dot {
+    flex: 1;
+    height: 4px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.06);
+    transition: background 0.3s, transform 0.3s;
+  }
+  .strength-dot.active {
+    transform: scaleY(1.5);
+  }
+
+  /* Action buttons */
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #050810;
+    flex: 1;
+    justify-content: center;
+    font-size: 15px;
+    padding: 14px 28px;
+  }
+  .btn-primary:hover {
+    background: #00dfc0;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0,245,212,0.25);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    border-color: rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+  }
+  .btn-copy {
+    background: rgba(0,245,212,0.08);
+    color: var(--accent);
+    border: 1px solid rgba(0,245,212,0.2);
+  }
+  .btn-copy:hover {
+    background: rgba(0,245,212,0.15);
+    box-shadow: 0 4px 16px rgba(0,245,212,0.15);
+  }
+  .btn-copy.copied {
+    background: rgba(34,197,94,0.1);
+    color: var(--good);
+    border-color: rgba(34,197,94,0.3);
+  }
+  .btn svg { flex-shrink: 0; }
+
+  /* Options card */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .option-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .option-toggle:hover {
+    border-color: rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.02);
+  }
+  .option-toggle.active {
+    border-color: rgba(0,245,212,0.3);
+    background: rgba(0,245,212,0.04);
+  }
+  .option-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .option-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .option-toggle.active .option-icon {
+    background: rgba(0,245,212,0.15);
+  }
+  .option-info { }
+  .option-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: block;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .option-example {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+  }
+
+  /* Toggle switch */
+  .toggle {
+    width: 38px; height: 22px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 100px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    background: var(--muted);
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: all 0.2s;
+  }
+  .option-toggle.active .toggle {
+    background: var(--accent);
+  }
+  .option-toggle.active .toggle::after {
+    left: 19px;
+    background: var(--bg);
+  }
+
+  /* Slider */
+  .slider-section { margin-bottom: 4px; }
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .slider-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .slider-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .slider-value span {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(0,245,212,0.15);
+    transition: box-shadow 0.2s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 8px rgba(0,245,212,0.15);
+  }
+
+  /* Presets */
+  .presets-label {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+  }
+  .preset-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .preset-btn:hover {
+    border-color: rgba(0,245,212,0.3);
+    color: var(--accent);
+  }
+  .preset-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,245,212,0.06);
+  }
+
+  /* Stats card */
+  .stats-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 28px 36px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    animation: fadeSlideUp 0.8s ease 0.3s both;
+  }
+  .stat-item {
+    text-align: center;
+  }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+    margin: 0 auto;
+  }
+
+  /* History */
+  .history-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 28px 36px;
+    margin-top: 20px;
+    animation: fadeSlideUp 0.8s ease 0.4s both;
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .clear-btn {
+    font-size: 11px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { color: var(--danger); }
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    gap: 12px;
+  }
+  .history-item:hover {
+    border-color: rgba(0,245,212,0.2);
+    background: rgba(0,245,212,0.02);
+  }
+  .history-pw {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text);
+  }
+  .history-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .history-strength {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .history-copy {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    padding: 4px;
+  }
+  .history-item:hover .history-copy { opacity: 1; }
+  .empty-history {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid rgba(0,245,212,0.3);
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    z-index: 100;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Entropy indicator */
+  .entropy-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .entropy-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .entropy-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+    min-width: 70px;
+    text-align: right;
+  }
+  .entropy-track {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .entropy-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  /* Character count breakdown */
+  .char-breakdown {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .char-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    border: 1px solid;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+  }
+  .char-tag.has-chars { opacity: 1; }
+  .char-tag-upper { color: #60a5fa; border-color: rgba(96,165,250,0.3); }
+  .char-tag-lower { color: var(--text); border-color: rgba(226,232,240,0.2); }
+  .char-tag-digit { color: var(--accent); border-color: rgba(0,245,212,0.3); }
+  .char-tag-symbol { color: #a78bfa; border-color: rgba(167,139,250,0.3); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .container { padding: 40px 16px 60px; }
+    .card { padding: 24px 20px; }
+    .options-grid { grid-template-columns: 1fr; }
+    .stats-card { grid-template-columns: 1fr; padding: 20px; }
+    .stat-divider { display: none; }
+    .history-section { padding: 24px 20px; }
+    .actions { flex-direction: column; }
+    .btn-primary { flex: none; }
+  }
+
+  /* Animations on generate */
+  @keyframes charReveal {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .password-text span {
+    display: inline-block;
+    animation: charReveal 0.3s ease both;
+  }
+
+  .card-label {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-badge">🔐 SecurePass Generator</div>
+    <h1>Mots de passe<br>imparables.</h1>
+    <p class="subtitle">// génération cryptographique sécurisée</p>
+  </div>
+
+  <!-- Main generator card -->
+  <div class="card password-section">
+    <div class="card-label">Mot de passe généré</div>
+
+    <!-- Password display -->
+    <div class="password-display" onclick="copyPassword()" title="Cliquer pour copier">
+      <div class="password-text placeholder" id="passwordDisplay">Cliquez sur Générer...</div>
+      <div class="security-ribbon" id="securityRibbon" style="display:none;"></div>
+    </div>
+
+    <!-- Entropy -->
+    <div class="entropy-bar">
+      <span class="entropy-label">Entropie</span>
+      <div class="entropy-track"><div class="entropy-fill" id="entropyFill"></div></div>
+      <span class="entropy-value" id="entropyValue">— bits</span>
+    </div>
+
+    <!-- Char breakdown -->
+    <div class="char-breakdown">
+      <span class="char-tag char-tag-upper" id="tagUpper">A-Z: 0</span>
+      <span class="char-tag char-tag-lower" id="tagLower">a-z: 0</span>
+      <span class="char-tag char-tag-digit" id="tagDigit">0-9: 0</span>
+      <span class="char-tag char-tag-symbol" id="tagSymbol">!@#: 0</span>
+    </div>
+
+    <!-- Strength -->
+    <div class="strength-container">
+      <div class="strength-header">
+        <span class="strength-label">Niveau de sécurité</span>
+        <span class="strength-text" id="strengthText">—</span>
+      </div>
+      <div class="strength-dots" id="strengthDots">
+        <div class="strength-dot"></div>
+        <div class="strength-dot"></div>
+        <div class="strength-dot"></div>
+        <div class="strength-dot"></div>
+        <div class="strength-dot"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-primary" onclick="generatePassword()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12V8a8 8 0 0 1 16 0v4"/><rect x="2" y="12" width="20" height="10" rx="3"/><circle cx="12" cy="17" r="1.5" fill="currentColor"/></svg>
+        Générer
+      </button>
+      <button class="btn btn-copy" id="copyBtn" onclick="copyPassword()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copier
+      </button>
+      <button class="btn btn-secondary" onclick="saveToHistory()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Sauver
+      </button>
+    </div>
+  </div>
+
+  <!-- Options card -->
+  <div class="card">
+    <div class="card-label">Configuration</div>
+
+    <!-- Slider -->
+    <div class="slider-section">
+      <div class="slider-header">
+        <span class="slider-label">Longueur</span>
+        <div class="slider-value"><span id="lengthVal">16</span> <span>chars</span></div>
+      </div>
+      <input type="range" id="lengthSlider" min="6" max="64" value="16" oninput="updateLength()">
+    </div>
+
+    <!-- Presets -->
+    <div style="margin-top: 16px; margin-bottom: 24px;">
+      <span class="presets-label">Préréglages rapides</span>
+      <div class="presets">
+        <button class="preset-btn" onclick="setPreset('simple', 8, true, true, false, false)">Simple · 8</button>
+        <button class="preset-btn active" onclick="setPreset('standard', 16, true, true, true, false)">Standard · 16</button>
+        <button class="preset-btn" onclick="setPreset('fort', 24, true, true, true, true)">Fort · 24</button>
+        <button class="preset-btn" onclick="setPreset('max', 32, true, true, true, true)">Maximum · 32</button>
+        <button class="preset-btn" onclick="setPreset('pin', 6, false, false, true, false)">PIN · 6</button>
+        <button class="preset-btn" onclick="setPreset('phrase', 20, false, true, false, false)">Phrase · 20</button>
+      </div>
+    </div>
+
+    <!-- Toggles -->
+    <div class="options-grid">
+      <div class="option-toggle active" id="opt-upper" onclick="toggleOption('upper')">
+        <div class="option-left">
+          <div class="option-icon">🔠</div>
+          <div class="option-info">
+            <span class="option-name">Majuscules</span>
+            <span class="option-example">A B C D E F</span>
+          </div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+
+      <div class="option-toggle active" id="opt-lower" onclick="toggleOption('lower')">
+        <div class="option-left">
+          <div class="option-icon">🔡</div>
+          <div class="option-info">
+            <span class="option-name">Minuscules</span>
+            <span class="option-example">a b c d e f</span>
+          </div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+
+      <div class="option-toggle active" id="opt-digits" onclick="toggleOption('digits')">
+        <div class="option-left">
+          <div class="option-icon">🔢</div>
+          <div class="option-info">
+            <span class="option-name">Chiffres</span>
+            <span class="option-example">0 1 2 3 4 5</span>
+          </div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+
+      <div class="option-toggle" id="opt-symbols" onclick="toggleOption('symbols')">
+        <div class="option-left">
+          <div class="option-icon">🔣</div>
+          <div class="option-info">
+            <span class="option-name">Symboles</span>
+            <span class="option-example">! @ # $ % ^</span>
+          </div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-card">
+    <div class="stat-item">
+      <span class="stat-value" id="statEntropy">0</span>
+      <span class="stat-label">bits entropie</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="statPool">0</span>
+      <span class="stat-label">chars disponibles</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="statTime">—</span>
+      <span class="stat-label">temps crack</span>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section">
+    <div class="section-header">
+      <span class="section-title">// Historique</span>
+      <button class="clear-btn" onclick="clearHistory()">Effacer tout</button>
+    </div>
+    <div class="history-list" id="historyList">
+      <div class="empty-history">Aucun mot de passe sauvegardé</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const CHARS = {
+    upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    lower: 'abcdefghijklmnopqrstuvwxyz',
+    digits: '0123456789',
+    symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+  };
+
+  const state = {
+    upper: true, lower: true, digits: true, symbols: false,
+    length: 16,
+    password: '',
+    history: []
+  };
+
+  let activePreset = 'standard';
+
+  function toggleOption(type) {
+    const active = Object.keys(state).filter(k => ['upper','lower','digits','symbols'].includes(k) && state[k]);
+    if (active.length === 1 && active[0] === type) {
+      showToast('⚠️ Au moins une option requise');
+      return;
+    }
+    state[type] = !state[type];
+    document.getElementById('opt-' + type).classList.toggle('active', state[type]);
+    activePreset = null;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    updateStats();
+  }
+
+  function updateLength() {
+    state.length = parseInt(document.getElementById('lengthSlider').value);
+    document.getElementById('lengthVal').textContent = state.length;
+    updateStats();
+  }
+
+  function setPreset(name, len, upper, lower, digits, symbols) {
+    state.length = len;
+    state.upper = upper; state.lower = lower;
+    state.digits = digits; state.symbols = symbols;
+    document.getElementById('lengthSlider').value = len;
+    document.getElementById('lengthVal').textContent = len;
+    ['upper','lower','digits','symbols'].forEach(k => {
+      document.getElementById('opt-' + k).classList.toggle('active', state[k]);
+    });
+    activePreset = name;
+    document.querySelectorAll('.preset-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.toLowerCase().startsWith(name));
+    });
+    updateStats();
+  }
+
+  function getCharset() {
+    let s = '';
+    if (state.upper) s += CHARS.upper;
+    if (state.lower) s += CHARS.lower;
+    if (state.digits) s += CHARS.digits;
+    if (state.symbols) s += CHARS.symbols;
+    return s;
+  }
+
+  function generatePassword() {
+    const charset = getCharset();
+    if (!charset) { showToast('⚠️ Sélectionnez au moins une option'); return; }
+
+    const arr = new Uint32Array(state.length);
+    crypto.getRandomValues(arr);
+
+    let pw = '';
+    // Ensure at least one of each selected type
+    const guaranteed = [];
+    if (state.upper) guaranteed.push(CHARS.upper[arr[0] % CHARS.upper.length]);
+    if (state.lower) guaranteed.push(CHARS.lower[arr[1] % CHARS.lower.length]);
+    if (state.digits) guaranteed.push(CHARS.digits[arr[2] % CHARS.digits.length]);
+    if (state.symbols) guaranteed.push(CHARS.symbols[arr[3] % CHARS.symbols.length]);
+
+    for (let i = 0; i < state.length; i++) {
+      pw += charset[arr[i] % charset.length];
+    }
+    // Replace first N chars with guaranteed
+    const pwArr = pw.split('');
+    const positions = new Uint32Array(guaranteed.length);
+    crypto.getRandomValues(positions);
+    guaranteed.forEach((c, i) => {
+      pwArr[positions[i] % state.length] = c;
+    });
+    pw = pwArr.join('');
+
+    state.password = pw;
+    renderPassword(pw);
+    updateStats();
+  }
+
+  function renderPassword(pw) {
+    const display = document.getElementById('passwordDisplay');
+    display.classList.remove('placeholder');
+    display.innerHTML = pw.split('').map((c, i) => {
+      let cls = 'char-lower';
+      if (/[A-Z]/.test(c)) cls = 'char-upper';
+      else if (/[0-9]/.test(c)) cls = 'char-digit';
+      else if (!/[a-z]/.test(c)) cls = 'char-symbol';
+      const delay = i * 18;
+      return `<span class="${cls}" style="animation-delay:${delay}ms">${c}</span>`;
+    }).join('');
+
+    // Count chars
+    let upper=0, lower=0, digit=0, symbol=0;
+    for (const c of pw) {
+      if (/[A-Z]/.test(c)) upper++;
+      else if (/[a-z]/.test(c)) lower++;
+      else if (/[0-9]/.test(c)) digit++;
+      else symbol++;
+    }
+    const setTag = (id, count, prefix) => {
+      const el = document.getElementById(id);
+      el.textContent = `${prefix}: ${count}`;
+      el.classList.toggle('has-chars', count > 0);
+    };
+    setTag('tagUpper', upper, 'A-Z');
+    setTag('tagLower', lower, 'a-z');
+    setTag('tagDigit', digit, '0-9');
+    setTag('tagSymbol', symbol, '!@#');
+  }
+
+  function calcEntropy() {
+    const pool = getCharset().length;
+    if (!pool) return 0;
+    return Math.round(state.length * Math.log2(pool));
+  }
+
+  function getStrength(entropy) {
+    if (entropy < 28) return { level: 1, label: 'Très faible', color: '#ef4444' };
+    if (entropy < 36) return { level: 2, label: 'Faible', color: '#f97316' };
+    if (entropy < 60) return { level: 3, label: 'Moyen', color: '#f59e0b' };
+    if (entropy < 80) return { level: 4, label: 'Fort', color: '#22c55e' };
+    return { level: 5, label: 'Très fort', color: '#00f5d4' };
+  }
+
+  function formatCrackTime(entropy) {
+    const guesses = Math.pow(2, entropy);
+    const guessesPerSec = 1e12; // 1 trillion/sec
+    const seconds = guesses / guessesPerSec;
+    if (seconds < 1) return '<1s';
+    if (seconds < 60) return Math.round(seconds) + 's';
+    if (seconds < 3600) return Math.round(seconds/60) + 'min';
+    if (seconds < 86400) return Math.round(seconds/3600) + 'h';
+    if (seconds < 31536000) return Math.round(seconds/86400) + 'j';
+    if (seconds < 3.154e10) return Math.round(seconds/31536000) + 'ans';
+    if (seconds < 3.154e13) return (seconds/3.154e10).toFixed(0) + 'K ans';
+    if (seconds < 3.154e16) return (seconds/3.154e13).toFixed(0) + 'M ans';
+    return '∞';
+  }
+
+  function updateStats() {
+    const entropy = calcEntropy();
+    const pool = getCharset().length;
+    const s = getStrength(entropy);
+
+    // Strength dots
+    const dots = document.querySelectorAll('.strength-dot');
+    dots.forEach((d, i) => {
+      const active = i < s.level;
+      d.style.background = active ? s.color : '';
+      d.style.opacity = active ? '1' : '0.15';
+      d.classList.toggle('active', active);
+    });
+    const strengthText = document.getElementById('strengthText');
+    strengthText.textContent = entropy > 0 ? s.label : '—';
+    strengthText.style.color = s.color;
+
+    // Security ribbon
+    const ribbon = document.getElementById('securityRibbon');
+    if (state.password) {
+      ribbon.style.display = 'block';
+      ribbon.textContent = s.label;
+      ribbon.style.background = s.color + '22';
+      ribbon.style.color = s.color;
+      ribbon.style.border = `1px solid ${s.color}44`;
+    }
+
+    // Entropy bar
+    const maxEnt = 130;
+    document.getElementById('entropyFill').style.width = Math.min(100, entropy / maxEnt * 100) + '%';
+    document.getElementById('entropyValue').textContent = entropy > 0 ? entropy + ' bits' : '— bits';
+
+    // Stats
+    document.getElementById('statEntropy').textContent = entropy || '—';
+    document.getElementById('statPool').textContent = pool || '—';
+    document.getElementById('statTime').textContent = entropy > 0 ? formatCrackTime(entropy) : '—';
+  }
+
+  function copyPassword() {
+    if (!state.password) { showToast('⚠️ Générez d\'abord un mot de passe'); return; }
+    navigator.clipboard.writeText(state.password).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.classList.add('copied');
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copié !`;
+      showToast('✅ Copié dans le presse-papier');
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copier`;
+      }, 2000);
+    });
+  }
+
+  function saveToHistory() {
+    if (!state.password) { showToast('⚠️ Générez d\'abord un mot de passe'); return; }
+    const entropy = calcEntropy();
+    const s = getStrength(entropy);
+    state.history.unshift({ pw: state.password, strength: s, entropy });
+    if (state.history.length > 8) state.history.pop();
+    renderHistory();
+    showToast('💾 Sauvegardé dans l\'historique');
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (state.history.length === 0) {
+      list.innerHTML = '<div class="empty-history">Aucun mot de passe sauvegardé</div>';
+      return;
+    }
+    list.innerHTML = state.history.map((item, i) => `
+      <div class="history-item" onclick="loadFromHistory(${i})">
+        <span class="history-pw">${item.pw}</span>
+        <div class="history-meta">
+          <span class="history-strength" style="color:${item.strength.color};background:${item.strength.color}18;border:1px solid ${item.strength.color}33">${item.strength.label}</span>
+          <button class="history-copy" onclick="event.stopPropagation();copyHistoryItem(${i})" title="Copier">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function loadFromHistory(i) {
+    state.password = state.history[i].pw;
+    renderPassword(state.password);
+    updateStats();
+  }
+
+  function copyHistoryItem(i) {
+    navigator.clipboard.writeText(state.history[i].pw).then(() => showToast('✅ Copié !'));
+  }
+
+  function clearHistory() {
+    state.history = [];
+    renderHistory();
+    showToast('🗑️ Historique effacé');
+  }
+
+  let toastTimeout;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Init
+  updateStats();
+  generatePassword();
+</script>
+</body>
+</html>
